@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/go-jose/go-jose/v4"
@@ -264,16 +266,43 @@ type PKCE struct {
 
 // Web is the config format for the HTTP server.
 type Web struct {
-	HTTP           string         `json:"http"`
-	HTTPS          string         `json:"https"`
-	Headers        Headers        `json:"headers"`
-	TLSCert        string         `json:"tlsCert"`
-	TLSKey         string         `json:"tlsKey"`
-	TLSMinVersion  string         `json:"tlsMinVersion"`
-	TLSMaxVersion  string         `json:"tlsMaxVersion"`
-	AllowedOrigins []string       `json:"allowedOrigins"`
-	AllowedHeaders []string       `json:"allowedHeaders"`
-	ClientRemoteIP ClientRemoteIP `json:"clientRemoteIP"`
+	HTTP                       string         `json:"http"`
+	HTTPS                      string         `json:"https"`
+	Headers                    Headers        `json:"headers"`
+	TLSCert                    string         `json:"tlsCert"`
+	TLSKey                     string         `json:"tlsKey"`
+	TLSMinVersion              string         `json:"tlsMinVersion"`
+	TLSMaxVersion              string         `json:"tlsMaxVersion"`
+	AllowedTLSCiphers          []string       `json:"allowedTLSCiphers"`
+	AllowedOrigins             []string       `json:"allowedOrigins"`
+	AllowedHeaders             []string       `json:"allowedHeaders"`
+	ClientRemoteIP             ClientRemoteIP `json:"clientRemoteIP"`
+	AllowedTLSCurvePreferences []string       `json:"allowedTLSCurvePreferences"`
+}
+
+var allowedCurveNames = map[string]tls.CurveID{
+	"SecP256r1MLKEM768":  tls.SecP256r1MLKEM768,
+	"SecP384r1MLKEM1024": tls.SecP384r1MLKEM1024,
+	"P256":               tls.CurveP256,
+	"P384":               tls.CurveP384,
+	"P521":               tls.CurveP521,
+	"CurveP256":          tls.CurveP256,
+	"CurveP384":          tls.CurveP384,
+	"CurveP521":          tls.CurveP521,
+	"X25519":             tls.X25519,
+	"P-256":              tls.CurveP256,
+	"P-384":              tls.CurveP384,
+	"P-521":              tls.CurveP521,
+}
+
+// mapKeys returns the keys of a map as a slice.
+func mapKeys(m map[string]tls.CurveID) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 type ClientRemoteIP struct {
